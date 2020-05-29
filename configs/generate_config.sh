@@ -35,7 +35,7 @@ else
 fi
 
 echo endpoint_port = 8082 >> ${target_file}
-echo debug = true >> ${target_file}
+echo debug = false >> ${target_file}
 
 if [ "x" != "x${ROUTER_TABLE}" ]; then
         echo >>${target_file} "router_table_name=\"${ROUTER_TABLE}\""
