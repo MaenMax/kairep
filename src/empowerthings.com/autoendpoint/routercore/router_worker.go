@@ -410,6 +410,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 				l4g.Info("Offending simple push payload content: %v", dataC)
 				return
 			}
+			rw.w.WriteHeader(http.StatusBadRequest) //400 
 			return
 		}
 
@@ -420,6 +421,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 		if err != nil {
 			l4g.Error("[ERROR] Error Routing SimplePush notification. '%s' uaid:%s", err, rw.uaid)
 			l4g.Info("responseCode:%v uaid:%s appServerIP:%s", http.StatusInternalServerError, rw.uaid, rw.app_server_ip)
+			rw.w.WriteHeader(http.StatusInternalServerError) //500
 			
 			return
 
@@ -463,14 +465,10 @@ func (rw *T_RouterWorker) RouteNotification() {
 			}
 
 		default:
-			if rw.debug {
-				panic("Unexpected responseCode from CEP for a simplepush message.")
-			} else {
-				l4g.Error("Unexpected responseCode from CEP for a simplepush message: %v, uaid:%s appServerIP:%s", response_code, rw.uaid, rw.app_server_ip)
-				if !rw.multicast{
-					rw.stats.Increment("webpush.500")
-					rw.w.WriteHeader(http.StatusInternalServerError) //500
-				}
+			l4g.Error("Unexpected responseCode from CEP for a simplepush message: %v, uaid:%s appServerIP:%s", response_code, rw.uaid, rw.app_server_ip)
+			if !rw.multicast{
+				rw.stats.Increment("webpush.500")
+				rw.w.WriteHeader(http.StatusInternalServerError) //500
 			}
 		}
 
@@ -487,6 +485,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 	if err != nil {
 
 		l4g.Error("[ERROR] Cannot generate message_id (message version). '%s' uaid:%s appServerIP:%s", err, rw.uaid, rw.app_server_ip)
+		rw.w.WriteHeader(http.StatusInternalServerError) //500
 		return
 	}
 
@@ -511,6 +510,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 		if err != nil {
 			l4g.Error("[ERROR] Cannot marshal notification body. '%s' uaid:%s appServerIP:%s", err, rw.uaid, rw.app_server_ip)
 			l4g.Info("Offending input data was: '%v'", dataA)
+			rw.w.WriteHeader(http.StatusInternalServerError) //500
 			return
 		}
 
@@ -520,6 +520,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 		if err != nil {
 			l4g.Error("[ERROR] Cannot marshal notification body.'%s' uaid:%s appServerIP:%s", err, rw.uaid, rw.app_server_ip)
 			l4g.Info("Offending input data was: '%v'", dataB)
+			rw.w.WriteHeader(http.StatusBadRequest) //400
 			return
 		}
 	}
@@ -543,7 +544,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 			
 			if rw.is_limited { // Check for limitation only if this feature is enabled.
 				if rw.is_exceeded(node_id) {
-
+					l4g.Error("[ERROR] TTL exceed limit. uaid:%s appServerIP:%s", rw.uaid, rw.app_server_ip)
 					return
 
 				}
@@ -630,7 +631,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 		if notification.TTL != 0 { // Save only if message TTL value is higher than 0 seconds.
 			if rw.is_limited { // Check for limitation only if this feature is enabled.
 				if rw.is_exceeded(node_id) {
-
+					l4g.Error("[ERROR] TTL exceed limit. uaid:%s appServerIP:%s", rw.uaid, rw.app_server_ip)
 					return
 
 				}

@@ -1,3 +1,7 @@
+2020/05/01 bqiu v3.0.2
+Fixes :
+    * Bug 91938 - Add http respond code for all return cases in REP.
+
 2019/03/20 Maen v0.14.12-p4-USA
 
 This GoREP version is specific to US market, and have included solving two issues related to multicast API. Those two multicast API issues need to be fixed the same way in JIO version as well. This version will be dockerized (run using docker technology). The ONLY difference between this version and v0.14.12-p4 is the two fixes of multicast API bug, which were repoted in those two bugs:

@@ -26,6 +26,10 @@ build image:
     - make
     - make deploy
     - docker build --pull --no-cache -t $CONTAINER_DEV_IMAGE .
+  only:
+    - tags@cloud/gorep
+    - branches@cloud/gorep
+    - master@cloud/gorep
 
 release-image:
   tags:
@@ -35,14 +39,19 @@ release-image:
     ## Tag and push docker-buildenv image
     - docker tag $CONTAINER_DEV_IMAGE $CONTAINER_RELEASE_IMAGE
     - docker push $CONTAINER_RELEASE_IMAGE
-
+  only:
+    - tags@cloud/gorep
+    - branches@cloud/gorep
+    - master@cloud/gorep
+    
 clean dev image:
   stage: cleanup
   tags:
     - "gorep-runner"
   script:
-    - "echo no-op"
-    #- docker rmi -f $CONTAINER_DEV_IMAGE
-    #- docker rmi -f generic
-  when: always
-
+    - docker rmi -f $CONTAINER_DEV_IMAGE
+    - docker rmi -f generic
+  only:
+    - tags@cloud/gorep
+    - branches@cloud/gorep
+    - master@cloud/gorep
