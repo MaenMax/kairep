@@ -764,7 +764,6 @@ var crypto_key_req_labels_v1 = []string{"dh"}
 var encryption_key_req_labels = []string{"salt"}
 
 func (rw *T_RouterWorker) extract_headers(request_headers http.Header, vapid bool) (err error) {
-	var resp_body string
 	if vapid {
 
 		rw.vapid_headers.Encoding = request_headers.Get("Content-Encoding")
@@ -774,24 +773,18 @@ func (rw *T_RouterWorker) extract_headers(request_headers http.Header, vapid boo
 		rw.vapid_headers.CryptoKey = request_headers.Get("Crypto-Key")
 
 		if len(rw.vapid_headers.CryptoKey) != 0 {
-			fmt.Println("Call 1")
 			rw.vapid_headers.CryptoKey, err = utils.Sanitize_Header(rw.vapid_headers.CryptoKey, crypto_key_req_labels_v2)
 
 			if err != nil {
-				resp_body = getResponseBody("101")
-				fmt.Fprintf(rw.w, resp_body)
 				return err
 
 			}
 		}
 
 		if len(rw.vapid_headers.Encryption) != 0{
-			fmt.Println("Call 2")
 			rw.vapid_headers.Encryption, err = utils.Sanitize_Header(rw.vapid_headers.Encryption, encryption_key_req_labels)
 
 			if err != nil {
-				resp_body = getResponseBody("101")
-				fmt.Fprintf(rw.w, resp_body)
 				return err
 			}
 		}
@@ -806,8 +799,6 @@ func (rw *T_RouterWorker) extract_headers(request_headers http.Header, vapid boo
 
 		rw.ttl, err = strconv.Atoi(request_headers.Get("ttl"))
 		if err != nil {
-			resp_body = getResponseBody("112")
-			fmt.Fprintf(rw.w, resp_body)
 			return err
 
 		}
@@ -822,8 +813,6 @@ func (rw *T_RouterWorker) extract_headers(request_headers http.Header, vapid boo
 		rw.crypto_headers.CryptoKey, err = utils.Sanitize_Header(rw.crypto_headers.CryptoKey, crypto_key_req_labels_v1)
 
 		if err != nil {
-			resp_body = getResponseBody("101")
-			fmt.Fprintf(rw.w, resp_body)
 			return err
 		}
 	}
@@ -832,8 +821,6 @@ func (rw *T_RouterWorker) extract_headers(request_headers http.Header, vapid boo
 		
 		rw.crypto_headers.Encryption, err = utils.Sanitize_Header(rw.crypto_headers.Encryption, encryption_key_req_labels)
 		if err != nil {
-			resp_body = getResponseBody("101")
-			fmt.Fprintf(rw.w, resp_body)
 			return err
 		}
 	}

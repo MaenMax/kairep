@@ -1,3 +1,7 @@
+2020/05/05 bqiu v3.0.3
+Fixes :
+    * Bug 92015 - fmt.Fprintf should ONLY OCCUR after a rw.w.WriteHeader in REP. -r=raffi
+
 2020/05/01 bqiu v3.0.2
 Fixes :
     * Bug 91938 - Add http respond code for all return cases in REP.
