@@ -1,3 +1,7 @@
+2020/05/11 Maen  v3.0.4
+Fixes :
+    * Bug 90233 - fixed fetching TTL value from headers on multicast API.
+
 2020/05/05 bqiu v3.0.3
 Fixes :
     * Bug 92015 - fmt.Fprintf should ONLY OCCUR after a rw.w.WriteHeader in REP. -r=raffi

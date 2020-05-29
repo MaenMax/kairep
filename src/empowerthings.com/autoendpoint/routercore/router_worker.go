@@ -137,6 +137,14 @@ func (rw *T_RouterWorker) RouteNotification() {
 			rw.w.WriteHeader(http.StatusBadRequest) //400
 		}
 		return
+	}else{
+		rw.ttl, err = strconv.Atoi(rw.headers.Get("ttl"))
+		if err != nil {
+			if err != nil {
+				l4g.Error("Error while extracting TTL header of the multicast request.'%s' responseCode:%v appServerIP:%s", err, http.StatusBadRequest, rw.app_server_ip)
+				return 
+			}	
+		}
 	}
 
 	l4g.Info("Message for uaid:%s from appServerIP:%s", rw.uaid, rw.app_server_ip)
