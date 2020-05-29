@@ -1,3 +1,6 @@
+2020/05/28 sedwards  v3.0.5
+    * Bug 92148 - Carry over CI/CD Pipeline from old gorep repo and use empowerthings runner for automated builds. r=Raffi
+
 2020/05/11 Maen  v3.0.4
 Fixes :
     * Bug 90233 - fixed fetching TTL value from headers on multicast API.

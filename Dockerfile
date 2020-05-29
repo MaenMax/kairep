@@ -12,6 +12,9 @@ ADD ./ /data/autopush
 
 WORKDIR /data/autopush
 
+# FIXME: Add missing configration and scripts to tarball and deploy using it
+RUN rm -fr /data/autopush/.git && /data/autopush/src
+
 ADD docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]

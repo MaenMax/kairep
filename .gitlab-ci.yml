@@ -19,7 +19,7 @@ stages:
 
 build image:
   tags:
-    - "gorep-runner"
+    - "empowerthings-runner"
   stage: build
   script:
     ## Build base docker buildenv image
@@ -27,31 +27,33 @@ build image:
     - make deploy
     - docker build --pull --no-cache -t $CONTAINER_DEV_IMAGE .
   only:
-    - tags@cloud/gorep
-    - branches@cloud/gorep
-    - master@cloud/gorep
+    - tags@cloud/kairep
+    - branches@cloud/kairep
+    - master@cloud/kairep
 
 release-image:
   tags:
-    - "gorep-runner"
+    - "empowerthings-runner"
   stage: release
   script:
     ## Tag and push docker-buildenv image
     - docker tag $CONTAINER_DEV_IMAGE $CONTAINER_RELEASE_IMAGE
     - docker push $CONTAINER_RELEASE_IMAGE
   only:
-    - tags@cloud/gorep
-    - branches@cloud/gorep
-    - master@cloud/gorep
+    - tags@cloud/kairep
+    - branches@cloud/kairep
+    - master@cloud/kairep
     
 clean dev image:
   stage: cleanup
   tags:
-    - "gorep-runner"
+    - "empowerthings-runner"
   script:
     - docker rmi -f $CONTAINER_DEV_IMAGE
     - docker rmi -f generic
   only:
-    - tags@cloud/gorep
-    - branches@cloud/gorep
-    - master@cloud/gorep
+    - tags@cloud/kairep
+    - branches@cloud/kairep
+    - master@cloud/kairep
+
+
