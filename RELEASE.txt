@@ -1,3 +1,6 @@
+2020/05/28 sedwards  v3.0.6
+    * Bug 92148 - Correct copy and paste error in automated container build. r=Raffi
+
 2020/05/28 sedwards  v3.0.5
     * Bug 92148 - Carry over CI/CD Pipeline from old gorep repo and use empowerthings runner for automated builds. r=Raffi
 
