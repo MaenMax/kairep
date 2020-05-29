@@ -96,4 +96,9 @@ type AutoEndpointConfig struct {
 	// Maximum number of characters in a notification 
 	Max_Msg_Length int 
 
+	/**
+	  Datacenter for the CassandraDB for multi DC support
+	  Default: empty
+	*/
+	Cass_Datacenter string
 }

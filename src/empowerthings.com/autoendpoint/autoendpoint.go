@@ -293,6 +293,12 @@ func start_cassandra() (err error) {
 	cluster.Keyspace = _conf.Keyspace
 	cluster.Consistency = gocql.LocalQuorum
 
+	if len(_conf.Cass_Datacenter) > 0 {
+		l4g.Info("Cassandra using DCAwareRoundRobinPolicy with data center %s", _conf.Cass_Datacenter)
+		cluster.Consistency = gocql.LocalQuorum
+		cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy(_conf.Cass_Datacenter)
+	}
+
 	decrypted_cass_pass, err := decrypt_password(cass_password, crypto_key, "Cassandra")
 	if err != nil {
 

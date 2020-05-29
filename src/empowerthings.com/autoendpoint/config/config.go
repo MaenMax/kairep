@@ -70,6 +70,7 @@ func NewREPConfig() *AutoEndpointConfig {
 		Statsd_Port:       8125,
 		Max_Msg:           1000,
 		Max_Msg_Length:    4096,
+		Cass_Datacenter:   "",
 	}
 
 	return config
