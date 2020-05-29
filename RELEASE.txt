@@ -1,0 +1,437 @@
+2019/03/20 Maen v0.14.12-p4-USA
+
+This GoREP version is specific to US market, and have included solving two issues related to multicast API. Those two multicast API issues need to be fixed the same way in JIO version as well. This version will be dockerized (run using docker technology). The ONLY difference between this version and v0.14.12-p4 is the two fixes of multicast API bug, which were repoted in those two bugs:
+
+     57970: REP multicast API makes multiple http responses 
+     57971: REP multicast API checks for end-to-end encryption requirements 
+
+
+2019/02/05 Afsal v0.14.12-P4 (back porting v0.14.12-P2 changes)
+Fixes :
+    52495 : Optimized LUA script to avoid unnecessary read calls to redis slave nodes. 
+
+2019/01/17 Maen  v0.14.12-P3
+Fixes :
+    Bug: 55132
+    * Upgraded redis-go driver to v6.15.1
+    https://github.com/go-redis/redis/tree/v6.15.1
+
+2018/12/05 Afsal v0.14.12-P1
+Fixes :
+    52512 : Code modified to redirect all write commands to master nodes only if driver retry the command due to network error like EOF. 
+
+2018/11/14 Afsal v0.14.12
+Fixes : 
+    * Bug 49842 - Optimised code to reduce uasage of LUA script on redis. 
+    * Bug 51767 - Scaling has been done to utilise Redis Slave nodes for Read operations. 
+
+2018/11/05 Afsal v0.14.11
+Fixes : 
+    * Bug 49842,49841 - Count limit validation is done by LUA script. So the operation is atomic now. It will solve issues like 
+      "Message Count Limit breached in Redis"  and "Message count for a UAID in Cassandra DB and Redis found to be out of sync"
+
+
+2018/11/02 Afsal v0.14.10
+Feature: 
+    * Bug 50746 - Maximum number of socket connections for a node of a redis cluster is now configurable with Connection_Pool_Size parameter. Its default value is 10.
+
+2018/10/29 Afsal v0.14.9
+Fixes: 
+    * Bug 50745 - Fixed a bug. Now code returns 500 response code for any cassandra transaction errors instead of 410. 
+
+2018/10/22 Afsal v0.14.8
+Fixes: 
+    * Bug 49898 - Added error codes along with error response code to App Server
+
+2018/10/18 Afsal v0.14.7
+Fixes: 
+    * Bug 48995 - Added payload size validation and it is controlled by "max_msg_length" configuration parameter
+    * Bug 49898 - Added error description along with error response code to App Server
+
+2018/10/15 Afsal v0.14.6
+Fixes: 
+    * Modified code to remove expiry added for redis records 
+    * Bug 49804 - Handled redis transaction errors. 
+
+2018/10/11 Maen v0.14.5
+
+Feature: Added Redis password authentication in GoREP."REDIS_PASSWORD" environment variable should be set with an encrypted value. It should 
+be encrypted with the same fernet crypto-key used for encrypting Cassandra password. If max_msg conf parameter is set to zero, it means that we don't want to activate message limitation feature, i.e. we don't want to connect to Redis DB, thus, GoREP will NOT try to connect to Redis, and concequently, it won't complain about not finding REDIS_PASSWORD environment variable.
+
+2018/10/05 Afsal v0.14.4
+Fixes:
+    * GIT merge conflict which affected message limitation functionality resolved 
+
+2018/10/03 Afsal v0.14.3
+Fixes:
+    * Bug 49435 Removed Unwanted prints from logs 
+    * BUg 48142 Removed "not found" string from REP
+
+2018/09/27 Maen v0.14.2
+Fixes:
+    * Bug 48973 Prevent storing message of TTL= 0 seconds in Cassandra DB.
+
+2018/09/26 Afsal + Maen v0.14.1
+Fixes:
+    * Bug ID: 48783 Print CEP hostname only for online notifications
+    * Bug ID: 47862 Print App Server IP for all error messages 
+    * Changed source code  to fich the value of table_prefix configuration parameter and use it for Redis records prefix.    
+
+2018/09/24 Maen v0.14.0
+Fixes:
+    * Added message limitation per UAID feature using Redis DB.max_msg parameter added to configure the limitation. Value of zero means that there will be no limitation applied per UAID.
+
+    * Re-organized source code libraries (removed cumulis library and moved all of its content to be inside autoendpoint library).
+
+2018/09/14 Maen v0.13.5
+Fixes:
+    *Added a new module (executable) to remove provided list of subscriptions from Cassandra DB.
+    
+    * Modify Makefile to generate executables in bin folder for all modules by default.    
+    * Example of valid request:
+     ./bin/sub_remover -endpoint ./endpoints.txt -crypto_key <CRYPTO_KEY> -cass_user <USERNAME> -cass_pass <PASSWORD>  -cass_addr kaios3-cass002
+
+2018/09/13 Afsal v0.13.4
+Fixes:
+    *Bug Id : 48569
+        - Solved issue with reading public key (p256ecdsa) from cryptokey header 
+
+2018/09/07  Maen v0.13.3
+Fixes:
+    * Modified router_worker module to response 400 bad request to application server. Before it only printed
+      the error and returned.
+    * Bug Id : 48320
+           - Removed some debug logs from fernet.go file .
+    * Modified some notes (comments) in the source code to reflex on the latest modifications.
+
+2018/09/07  Raffi v0.13.2
+Fixes:
+    * Isolated the definition of sanitize_header into utils package and made
+      the function public so that it can be called from any place.
+    * Modified router_worker.go file in order to call this public function.
+    * Added test tool with test cases to validate the Sanitize_Header function
+    * Modified the Makefile to compile the test tool with 'make test'
+
+2018/09/06  Raffi v0.13.1
+
+Fixes:
+    * Loosen the too restrictive Standard Base64 format to support URL Safe Base 64 format as well.
+    * Make sure the output (i.e. cleaned header)  is a URL Safe Base 64 format.
+
+2018/09/06  Raffi v0.13.0
+
+Fixes:
+    * Rewrite verify_and_clean_headers and renamed it sanitize_header
+    * Corrected a small issue in Makefile when doing a clean
+
+2018/09/02  Maen  v0.12.0
+
+Fixes:
+
+    *Removed a dublicate calling of verify_and_clean_headers method in router_worker.go file.. 
+    *Added a replacement of "," by ";"  for received Crypto-Key and Encryption headers to avoid falilure of header splitting in verify_and_clean_headers method.
+
+
+2018/08/31  Maen + Raffi - v0.11.9
+
+Fixes:
+    * Cleaning the Crypto-Key and Encryption headers by removing the eventually
+      trailing '=' signs at the end of the value.
+    * Enforcing the presence of 'salt' label in Encryption header
+    * Enforcing the presense of 'dh' label in Crypto-Key header
+    * Fixed a typo from Varify_AppServer_ID to Verify_AppServer_ID
+
+2018/08/29  Maen + Afsal - v0.11.8
+Changes:
+  Bug Id: 47782
+- Modified behavior to save the message if CEP node is down, and to return 201 instead of 500.
+- Modified start_rep.sh script. Was stopping suddenly without any error.
+
+2018/08/25  Maen - v0.11.7
+Changes:
+- Remove headers incase of empty payload messages.
+
+2018/08/13  Afsal - v0.11.6
+Changes:
+    Bug Id :46559 
+        - Added StartREP and StopREP script in GoREP build
+    Bug Id :46479
+        - Moved irrelevant prints to debug in log
+
+
+2018/08/10  Maen - v0.11.5
+Changes:
+   - Added graceful shudown mechanism incase of Ctrl+C or Kill <PID>
+   - Added two optional command line argument flags for CPU and Memory profiling.
+
+2018/08/06  Afsal - v0.11.4
+
+Changes:
+  Bug Id : 46109
+    - GoREP Support DECIMAL for message tables of May,June, July and August Month Tables
+  Bug Id : 46138
+    - Issue with App server IP printing in the log has been solved
+
+2018/07/27  Maen- v0.11.3
+    Changes:
+       Modified worker code to pass headers to CEP incase of a webpush notification wih empty payload. The reason of this change is that CEP does not deliver any header-less offline notifications. Whatsapp notifications are empty (no payload) and they need to be saved and delivered incase a device is offline.
+
+2018/07/19  Afsal - v0.11.2
+
+Changes:
+  Bug Id : 44613
+    1. Modified log printing for uaid and chid not found cases.
+    2. Optimized code to print application server IP.
+
+
+2018/07/17  Afsal - v0.11.1
+
+ * Added hostname to statsd gauges.
+
+
+
+2018/07/11 Maen  - v0.11.0
+
+New Features:
+
+* Added an extra checking to varify that the application (Channel ID) is registered for push service. Checking will be done by quering Cassandra DB's message table of that UAID and varifying if that UAID has the CHID as one of its set entries of "chids" column.
+
+* If current_month entry for a UAID is not set in router table (null).
+GoREP will drop the user subscription. Please refer to /data/autopush/autopush/web/webpush.py
+
+* GoREP now will check the expiration of JWT as the first varification step.
+
+
+2018/07/02 Afsal  - v0.10.3.8
+
+Bug Id: 44066
+Changes :
+   - Resolved a bug to print response code 404 in case of error
+
+2018/06/26  Afsal  - v0.10.3.7:
+Changes:
+
+     1. Client IP (Application server) is added in the log for notification request. It will work only if X-Forwarded-For header is set
+     2. Log folder is created
+     3. Log configuration modified so that log files will be generated in log folder only
+
+
+2018/06/14  Afsal  - v0.10.3.6:
+Changes:
+
+     Log level changed from DEBUG to INFO
+
+
+2018/06/13  Afsal  - v0.10.3.5:
+Changes:
+
+     For offline case the log format changed to "Message saved successfully  uaid:<uaid>" irrespective of the debug flag
+
+
+
+2018/06/13  Maen  - v0.10.3.4:
+Changes:
+
+    * Logs has changed to print response code to application server instead from CEP.
+      when debug flag is deactivated.
+    * Changed "Response code to application server to" in logs to "responseCode".
+    * No subscription found for ID was changed to "No subscription found for uaid".
+
+2018/06/12  Afsal - v0.10.3.3:
+
+Changes:
+
+    * Logging changed to key:value format :
+      responseCode:<response code> uaid:<uaid> cepHostname:<cep node ip address>
+
+
+2018/06/08  Maen - v0.10.3.2:
+
+Changes:
+
+    * When debug flag is not activated, GoREP will only print:
+      reponse code + uaid + cep node ip address 
+      On each message delivery to CEP node.
+
+      if the printed response code is 200, it means successful delivery for that UAID.
+      if the printed response code is 404, it means router miss for that UAID.
+      
+
+2018/05/31  Maen - v0.10.3.1:
+
+Feature for the patch:
+  * Clean logs.
+  * Printing UAID for successful message saves, and for router misses.
+  * GoREP will now consider the message passed in the broadcast body in "msg" key. Before it made the assumption that message will always be empty (which is the use case for multicast), but it was better to read and send the content of the message for potential future usages.
+
+
+2018/05/30  Maen - v0.10.3:
+Bug fix:
+
+*Offline multicast was not sending the request headers to CEP, which caused an isse on messages delivery when device is back and online again. The reason is that CEP will save the record to Database without headers and that will lead CEP to send an empty noitification ({}) to client instead of sending a full, proper-formated notification JSON message.
+
+
+2018/05/18  Maen - v0.10.2:
+New Features:
+
+* Enhanced broadcast API in two modifications:
+
+[1] Added the ability to braodcast to a v1 only, v2 only and mix of v1 and v2 endpoints, however each single broadcast request need to have a valid public key of app server in headers and also a valid VAPID JWT even if all the endpoints in the list are v1 endpoints, still, app server need to provide the key and the token.
+
+[2] Before, if there is an n number of VAPID endpoints in the request, the API was making an n number of JWT checkings. Now, it is optimized to make the checking only one time, and to iterate over the endpoints. After that one time checking, the for loop will start to create workers for each endpoint. During the iteration, if the endpoint is:
+
+  - V1 endpoint: Then GoREP will proceed to notify the corresponding UAID as normal v1 message delivery.
+
+  - V2 endpoint: Then GoREP will check if the public key extracted from the result of decrypting that V2 endpoint matches with the one included in the header of the POST request on /bwpush/ API or not. 
+
+  As a result, if in the multicast request, there is an n number of v1 endpoints and m number of v2 endpoints, then:
+
+  Number of workers created = n + m  ( a worker per endpoint)
+
+  Number of JWT checkings = 1 checkig only before entering the for loop.
+
+  Number of public key comparisons  = m
+
+* Tried to reduce (optimize) the number of variables created in the worker module.
+
+* Added a checking before storing message into databas. If the year is 2018 and  "current_month" table entry for a particualr UAID is May and beyond (June, July, ...)   or if the year is greater than 2018, then GoREP will save into INT ttl and timestamp DB columns else, GoREP will save into DECIMAL ttl and timestamp DB colums. 
+
+
+2018/05/14  Maen - v0.10.1:
+New Features:
+
+* Changed log file name format to be a timestamp instead of serial
+  serial numbering from 0 to 999.
+
+
+2018/04/30  Maen - v0.10.0:
+
+New Features:
+
+* Cassandra's hosts can all be added now in configuration file
+and separated by a ","
+
+* Enhanced logs. Incase of deactivated debug flag, router miss or successfull delivery only will be printed.
+
+* Modified database query to fetch "current_month" column to be used to store offline messages.
+
+
+2018/04/19  Maen - v0.9.4:
+
+Bug fix:
+    *Better managed different cases of different response codes from CEP.
+
+
+2018/04/19  Maen - v0.9.3:
+
+Bug fix:
+    *Removed creating a go routen on each multicast endpoint.
+
+
+2018/04/19  Maen - v0.9.2:
+
+Bug fix:
+    * Enhanced some logs.
+
+2018/04/19  Maen - v0.9.1:
+
+Bug fix:
+    * Fixed Multicast  API message payload size limitation issue.Before it was not set properly.
+
+2018/04/16 Maen - v0.9.0:
+
+New Features:
+    * Added Statsd support. Including configuring Statsd Host + port number in 
+      configuration file.
+    * Addressed different kind of responses to application server to memic the 
+      behaviour of Python REP.
+    * Corrected the spellings of few logs.
+
+
+2018/03/26 Maen - v0.8.1:
+Bug fix:
+    * Corrected the format of received message to a base64 raw URL encoding.
+2018/03/23 Maen - v0.8.0:
+
+New features:
+
+    * Added SimplePush API.
+    * Added SimplePush GoFlip2  API /update/
+    * Added VAPID feature in Go REP (v2 API).
+    * CLean logs.
+    
+2018/01/29 Maen - v0.7.0:
+
+New features:
+
+    *Added the multicast API /bwpush/
+    *Added payload size limits. Limits of Payload size of the multicast API
+     can be set unsing "Max_Payload" configuration variable in autopush_endpoint.conf file.
+
+
+2017/12/20 Maen - v0.6.0:
+
+New feature:
+
+    *Added 'keyspace' configuration parameter in autopush_endpoint.conf file.
+
+
+2017/12/20 Maen - v0.5.0:
+
+New feature:
+
+    *Added Cassandra password decryption.
+
+
+2017/12/18 Maen - v0.4.0:
+
+New feature:
+
+    *Added /health_status API to return 200 OK. That will be used for Haproxy server.  
+
+
+2017/12/18 Maen - v0.3.0:
+
+New feature:
+
+    *The implementation of offline messages handling. 
+
+
+2017/12/06 Maen - v0.2.2:
+Bug fix:
+
+    *Worked with Raffi on fixing global variable issue.
+    The issue is in router_worker.go file.
+    A global variable was used to save notification details (headers, channel ID, crypto key, etc..).
+    That has created a synchronization issue in the sense that if workers  A, B, and C are created, 
+    worker B can change a global variable information before worker A can fetch it,
+    which will result in fetching (and sending) the wrong crypto key by worker A.
+    And the more worker objects are created, the more liklely for this scenario to occure.
+    Fix was done by getting rid of global variable and creating variables that are "sepecific to" that worker or object.
+
+
+2017/11/29 Maen - v0.2.1:
+Bug fix:
+
+    * Libraries had incomplete source files.Corrected.
+
+2017/11/28 Maen - v0.2.0
+
+New feature:
+
+    * New logs to report the response from CEP.
+
+2017/11/28 Maen - v0.1.1
+
+Bug fix:
+    * Array out of index when sending a notification with empty data. Solution was to check if the data is NOT empty first, and befor manipulating  the array.
+
+
+2017/11/23 Maen - v0.1.0
+   Kaios push Alpha version:
+   
+   * The first working version. This version does the basic routing of push message.
+
+   * This version does NOT support offline messages, as it is still being worked on.
+
+   * This version will read CassandraDB user name and password as an environment variables, however it does NOT yet support cassandraDB password decryption. To be added. 

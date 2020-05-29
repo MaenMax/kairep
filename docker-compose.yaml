@@ -1,0 +1,42 @@
+version: '3.2'
+services:
+  rep:
+    image: rep-autopush-${AUTOPUSH_GITREF}
+    hostname: rep.internal.kaiostech.com
+    stdin_open: true
+    tty: true
+    ports:
+       - "8082:8082"
+    networks:
+       - "push_autopush"
+       - "push_cassandra"
+       - "push_redis"
+    extra_hosts:
+       - "cassandra.internal.kaiostech.com:10.6.0.2"
+       - "redis.internal.kaiostech.com:172.16.226.2"
+       - "cep.internal.kaiostech.com:172.16.228.2"
+    environment:
+       - "ENDPOINT_HOSTNAME=push.stage.kaiostech.com"
+       - "STATSD_HOST=statsd.k3.kaiostech.com"
+       - "CASS_ADDRESS=172.31.78.130,172.31.1.243,172.31.6.210,172.31.69.146,172.31.24.152,172.31.27.215"
+       - "REDIS_ADDRESS=172.31.54.10:7000,172.31.54.10:7000,172.31.54.10:7000,172.31.54.10:7000,172.31.54.10:7000,172.31.54.10:7000"
+       - "CRYPTO_KEY=T7AI9ch6whfvkvC3mLe347PMiPgKMZ_9FJiaSWARGJs="
+       - "CASS_USERNAME=cassandra"
+       - "CASS_PASSWORD=gAAAAABbW3mlarR_iqPLveE57V5hEByG32oSsSWlBeKZn31HZ1GvN12dfDtY_uNx5-A52JWMjC1WaEKztj95HcmRsKXKWF2geQ=="
+       - "REDIS_PASSWORD=gAAAAABbyT-QA70h8FUpiWusf9SOsLAbjNElM-MgMUKL1il7oFyTAmYPggxgNd4ynT5DU9oWMypzBnDKMHr-9Lsh93P6CuyKDQ=="
+#       - "REDIS_PASSWORD=gAAAAABcZiiev5AKjreg7D9Yp9ENlfRkEwIOkIHu-yPsE_qGDQyjr_9gsTFTsBsK8Kvk4ZpT1P9fV3VZQwF5fHqiFFvs4NmqPg=="
+#       - "REDIS_PASSWORD=maenpassword5D"
+#    command:
+#       - /bin/sh
+#       - -c
+#       - |
+#       -  ./libexec/start_cep.sh && tail -f log/autopush.log
+
+networks:
+  push_cassandra:
+    external: true
+  push_redis:
+    external: true
+  push_autopush:
+    external: true
+

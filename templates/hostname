@@ -1,0 +1,4 @@
+# FIXME: Put this in the generic container all others are built from
+
+cat /etc/hostname
+

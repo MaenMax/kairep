@@ -1,0 +1,48 @@
+variables:
+  my_uid: 994
+  my_gid: 991
+
+variables:
+  GIT_STRATEGY: fetch
+  GIT_DEPTH: "1"
+  CONTAINER_DEV_IMAGE: $CI_PROJECT_PATH_SLUG:$CI_COMMIT_SHA
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+
+before_script:
+#  - docker system prune -f
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+stages:
+  - build
+  - release
+  - cleanup
+
+build image:
+  tags:
+    - "gorep-runner"
+  stage: build
+  script:
+    ## Build base docker buildenv image
+    - make
+    - make deploy
+    - docker build --pull --no-cache -t $CONTAINER_DEV_IMAGE .
+
+release-image:
+  tags:
+    - "gorep-runner"
+  stage: release
+  script:
+    ## Tag and push docker-buildenv image
+    - docker tag $CONTAINER_DEV_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+
+clean dev image:
+  stage: cleanup
+  tags:
+    - "gorep-runner"
+  script:
+    - "echo no-op"
+    #- docker rmi -f $CONTAINER_DEV_IMAGE
+    #- docker rmi -f generic
+  when: always
+
