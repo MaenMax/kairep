@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 	"time"
-
+	"strconv"
 	"github.com/gocql/gocql"
 	"golang.org/x/exp/utf8string"
 )
@@ -200,8 +200,17 @@ func DropUser(uaid string, session *gocql.Session) (dropped bool) {
 
 	dropped = false
 
-	if err = session.Query("DELETE FROM autopush.router WHERE uaid = ? ",
-		uaid).Consistency(gocql.One).Exec(); err != nil {
+	cursor, err:= calculate_cursor(uaid)
+	if err!=nil{
+
+		fmt.Println(err)
+		return false
+	}
+
+	str_cursor := strconv.Itoa(cursor)
+
+	if err = session.Query("DELETE FROM autopush.router_2 WHERE uaid = ? and cursor = ? ",
+		uaid, str_cursor).Consistency(gocql.One).Exec(); err != nil {
 		fmt.Println(err)
 		return false
 
@@ -253,5 +262,29 @@ func Repad(subscription string) (paded_str string) {
 	paded_str = subscription
 
 	return
+
+}
+
+func calculate_cursor(uaid string) (result int, err error) {
+
+	if len(uaid)!=32 {
+
+		err = errors.New("[Error]: Invalid UAID. Must be 32.")
+		return 0, err
+
+	}
+	last_three:= uaid[29:]
+
+	first_decimal,_  := strconv.ParseInt(string(last_three[0]), 16, 64)
+	second_decimal,_ := strconv.ParseInt(string(last_three[1]), 16, 64)
+	third_decimal,_  := strconv.ParseInt(string(last_three[2]), 16, 64)
+
+	int_first_decimal   :=   int(first_decimal) 
+	int_second_decimal  :=   int(second_decimal)
+	int_third_decimal   :=   int(third_decimal)
+
+	result = int_first_decimal * 256 + int_second_decimal * 16 +  int_third_decimal
+
+	return 
 
 }

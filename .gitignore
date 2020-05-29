@@ -1,0 +1,7 @@
+/bin/
+*.log
+*.log.[0-9]*
+/pkg/
+*.out
+*.pid
+*.tar.bz2

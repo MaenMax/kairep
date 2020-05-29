@@ -96,6 +96,4 @@ type AutoEndpointConfig struct {
 	// Maximum number of characters in a notification 
 	Max_Msg_Length int 
 
-	//Name of router table to be used. 
-	Router_Table_Name  string
 }

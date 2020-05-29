@@ -58,7 +58,7 @@ else
 fi
 echo statsd_port = 8125 >> ${target_file}
 echo max_msg_length = 4096 >> ${target_file}
-echo max_msg = 5 >> ${target_file}
+echo max_msg = 100 >> ${target_file}
 echo max_payload = 1000000 >> ${target_file}
 
 if [ "x" != "x${MESSAGE_TABLE}" ]; then

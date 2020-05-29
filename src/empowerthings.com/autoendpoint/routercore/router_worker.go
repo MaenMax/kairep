@@ -56,7 +56,7 @@ type T_RouterWorker struct {
 	stats                   *statsd.Client
 	multicast               bool
 	is_limited              bool
-	old_device              bool
+
 }
 
 func NewRouterWorker(encrypted_endpoint string, request_body []byte, request_headers http.Header, crypto_key string, debug bool, db_session *gocql.Session, w http.ResponseWriter, protocol int, vapid bool, statistics *statsd.Client, multicast bool, is_limited bool) *T_RouterWorker {
@@ -76,7 +76,6 @@ func NewRouterWorker(encrypted_endpoint string, request_body []byte, request_hea
 	tmp.stats = statistics
 	tmp.multicast = multicast
 	tmp.is_limited = is_limited
-	tmp.old_device = false
 
 	return &tmp
 
@@ -277,22 +276,16 @@ func (rw *T_RouterWorker) RouteNotification() {
 	var current_month string //Defines the name of the message table on which all notifications are supposed to be saved for this device or this UAID.
 	
 	
-	// For migration purposes, first we check if the device exist in the new router table. If it does not exist, then we will look into the old router table, and mark the device as old device so that this information can later be used to decide on where to save messages (in the new message table schema with cursor or the old one).
-	
-	cassandra.SetRouterTable(_conf.Router_Table_Name) 
-	node_id, current_month, router_type, err = cassandra.GetDeviceData(rw.uaid, rw.debug, rw.session,true)
+	node_id, current_month, router_type, err = cassandra.GetDeviceData(rw.uaid, rw.debug, rw.session)
 
 	if rw.debug {
 		l4g.Info("Device with uaid:%s is connected on: '%s'", rw.uaid, node_id)
 	}
-	
-	if err != nil && err.Error() != "not found"{
 
-		
+	if err != nil && err.Error() != "not found"{
 		l4g.Error("Failed to Get Device Data uaid='%s': '%s' appServerIP:%s", rw.uaid, err, rw.app_server_ip)		
 		l4g.Info("responseCode:%v uaid:%s appServerIP:%s", http.StatusInternalServerError, rw.uaid,rw.app_server_ip)		
 		if !rw.multicast{
-			rw.stats.Increment("webpush.500")
 			rw.w.WriteHeader(http.StatusInternalServerError) //500
 		}
 		resp_body = getResponseBody("999")
@@ -302,24 +295,16 @@ func (rw *T_RouterWorker) RouteNotification() {
 	}
 
 	if node_id == "" {
-		cassandra.SetRouterTable("router")
-		node_id, current_month, router_type, err = cassandra.GetDeviceData(rw.uaid, rw.debug, rw.session, false)
-
-		if node_id == "" {
-			
-			l4g.Info("responseCode:%v UAID not found uaid:%s appServerIP:%s", http.StatusGone, rw.uaid, rw.app_server_ip)
-			if !rw.multicast{
-				rw.stats.Increment("webpush.410")
-				rw.w.WriteHeader(http.StatusGone) //410
-			}
-			resp_body = getResponseBody("118")
-			fmt.Fprintf(rw.w, resp_body)
-
-			return
+		l4g.Info("responseCode:%v UAID not found uaid:%s appServerIP:%s", http.StatusGone, rw.uaid, rw.app_server_ip)
+		if !rw.multicast{
+			rw.w.WriteHeader(http.StatusGone) //410
 		}
+		resp_body = getResponseBody("118")
+		fmt.Fprintf(rw.w, resp_body)
 
-		rw.old_device = true
+		return
 	}
+
 
 	// Is current_month entry is nil? If yes, then drop the user.
 
@@ -369,13 +354,9 @@ func (rw *T_RouterWorker) RouteNotification() {
 	if router_type == "webpush" {
 		
 		var found bool
-		if rw.old_device{
-		found,err = cassandra.ValidateWebpush(rw.session, rw.debug, chid, rw.uaid, current_month, router_type,true)
-			}else{
-			
-			found,err = cassandra.ValidateWebpush(rw.session, rw.debug, chid, rw.uaid, current_month, router_type,false)
-
-		}
+		
+		found,err = cassandra.ValidateWebpush(rw.session, rw.debug, chid, rw.uaid, current_month, router_type)
+		
 
 		if err != nil && err.Error() != "not found"{
 			l4g.Error("Failed to validate CHID=%s uaid=%s: '%s' appServerIP:%s", chid, rw.uaid, err, rw.app_server_ip)		
@@ -568,7 +549,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 				}
 			}
 
-			err = cassandra.StoreNotification(notification, current_month,rw.old_device)
+			err = cassandra.StoreNotification(notification, current_month)
 			
 			if err != nil {
 
@@ -655,7 +636,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 				}
 			}
 			
-			err = cassandra.StoreNotification(notification, current_month,rw.old_device)
+			err = cassandra.StoreNotification(notification, current_month)
 
 			if err != nil {
 
@@ -776,7 +757,9 @@ func (rw *T_RouterWorker) format_id(chid string) string {
 
 // This method will take the received header object from the  message's server POST request which is of type http.headers and use it to fill Headers struct. What Push REP does, is that it passes the same headers it receives from message server to be used later in the PUT request. This will also return the crypto key header used in VAPID messages.
 
-var crypto_key_req_labels = []string{"dh","p256ecdsa"}
+var crypto_key_req_labels_v2 = []string{"dh","p256ecdsa"}
+var crypto_key_req_labels_v1 = []string{"dh"}
+
 var encryption_key_req_labels = []string{"salt"}
 
 func (rw *T_RouterWorker) extract_headers(request_headers http.Header, vapid bool) (err error) {
@@ -791,7 +774,7 @@ func (rw *T_RouterWorker) extract_headers(request_headers http.Header, vapid boo
 
 		if len(rw.vapid_headers.CryptoKey) != 0 {
 			fmt.Println("Call 1")
-			rw.vapid_headers.CryptoKey, err = utils.Sanitize_Header(rw.vapid_headers.CryptoKey, crypto_key_req_labels)
+			rw.vapid_headers.CryptoKey, err = utils.Sanitize_Header(rw.vapid_headers.CryptoKey, crypto_key_req_labels_v2)
 
 			if err != nil {
 				resp_body = getResponseBody("101")
@@ -835,7 +818,7 @@ func (rw *T_RouterWorker) extract_headers(request_headers http.Header, vapid boo
 
 	if len(rw.crypto_headers.CryptoKey) != 0 {
 		
-		rw.crypto_headers.CryptoKey, err = utils.Sanitize_Header(rw.crypto_headers.CryptoKey, crypto_key_req_labels)
+		rw.crypto_headers.CryptoKey, err = utils.Sanitize_Header(rw.crypto_headers.CryptoKey, crypto_key_req_labels_v1)
 
 		if err != nil {
 			resp_body = getResponseBody("101")

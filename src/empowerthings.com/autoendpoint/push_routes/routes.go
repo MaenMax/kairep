@@ -19,7 +19,6 @@ func init_router_ep() {
 		push_handlers.EnableLimitation()
 	}
 	cassandra.SetKeyspace(keyspace) 
-	cassandra.SetRouterTable(r_table_name)
 	counterdb.SetMaxMsg(maximum_msg)
 
 

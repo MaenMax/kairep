@@ -249,7 +249,7 @@ func start_http(conf *config.AutoEndpointConfig, crypto_key string, stats *stats
 		return
 	}
 
-	router := push_routes.NewRouter(crypto_key, conf.Debug, cass_session, conf.Keyspace, conf.Max_Payload, stats, conf.Max_Msg,conf.Router_Table_Name)
+	router := push_routes.NewRouter(crypto_key, conf.Debug, cass_session, conf.Keyspace, conf.Max_Payload, stats, conf.Max_Msg)
 
 	http_server = &http.Server{
 		// 2017/08/16 - RS - Now using a Listener instead (see above).
@@ -291,7 +291,7 @@ func start_cassandra() (err error) {
 	cluster := gocql.NewCluster(hosts...)
 
 	cluster.Keyspace = _conf.Keyspace
-	cluster.Consistency = gocql.Quorum
+	cluster.Consistency = gocql.LocalQuorum
 
 	decrypted_cass_pass, err := decrypt_password(cass_password, crypto_key, "Cassandra")
 	if err != nil {
