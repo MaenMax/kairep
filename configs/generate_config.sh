@@ -58,7 +58,13 @@ else
 fi
 echo statsd_port = 8125 >> ${target_file}
 echo max_msg_length = 4096 >> ${target_file}
-echo max_msg = 100 >> ${target_file}
+
+if [ "x" != "x${MAX_MSG}" ]; then
+        echo >>${target_file} "max_msg = \"${MAX_MSG}\""
+else
+        echo >>${target_file} "max_msg = \"100\""
+fi
+
 echo max_payload = 1000000 >> ${target_file}
 
 if [ "x" != "x${MESSAGE_TABLE}" ]; then

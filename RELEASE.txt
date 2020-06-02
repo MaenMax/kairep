@@ -1,3 +1,6 @@
+2020/06/01 sedwards v3.0.8
+    * Bug 95685: Support passing max_msg in as a variable in the docker-compose file on container startup. r=Bin
+
 2020/05/29 bqiu v3.0.7
 Fixes :
      Bug 85112: Cassandra Driver Changes for Multi DC setup.
