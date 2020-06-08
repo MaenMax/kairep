@@ -550,7 +550,7 @@ func (rw *T_RouterWorker) RouteNotification() {
 
 		if notification.TTL != 0 { // Save only if message TTL value is higher than 0 seconds.
 			
-			if rw.is_limited { // Check for limitation only if this feature is enabled.
+			if rw.is_limited && _conf.Max_Msg > 0  { // Check for limitation only if this feature is enabled.
 				if rw.is_exceeded(node_id) {
 					l4g.Error("[ERROR] TTL exceed limit. uaid:%s appServerIP:%s", rw.uaid, rw.app_server_ip)
 					return

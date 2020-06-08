@@ -1,3 +1,6 @@
+2020/06/08 bqiu v3.0.9
+    * Bug 96123 - max_msg=0 does not disable max msg check in REP. r=Raffi  
+
 2020/06/01 sedwards v3.0.8
     * Bug 95685: Support passing max_msg in as a variable in the docker-compose file on container startup. r=Bin
 
