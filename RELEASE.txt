@@ -1,4 +1,7 @@
-2020/06/08 bqiu v3.0.9
+22020/07/20 sedwards v3.0.10
+    * Bug 96123 - When setting max_msg=value remove all space and quotes to ensure REP sees the value as an integer. r=Raffi  
+
+020/06/08 bqiu v3.0.9
     * Bug 96123 - max_msg=0 does not disable max msg check in REP. r=Raffi  
 
 2020/06/01 sedwards v3.0.8
