@@ -51,7 +51,7 @@ const (
 	CRYPTO_KEY       string        = "CRYPTO_KEY"
 	CASS_USERNAME    string        = "CASS_USERNAME"
 	CASS_PASSWORD    string        = "CASS_PASSWORD"
-	TTL_DURATION     time.Duration = 1000 * 1000 * 1000 * 60 * 60 * 24 * 365
+	TTL_DURATION     time.Duration = 1000 * 1000 * 1000 * 60 * 60 * 24 * 365  * 100 // 100 years
 	MAX_ITER         int           = 10000
 	SHUTDOWN_TIMEOUT               = 10
 )
