@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"empowerthings.com/autoendpoint/routercore/model"
+	"empowerthings.com/autoendpoint/model"
 
 	//	"github.com/shopspring/decimal"
 	//	"gopkg.in/inf.v0"
@@ -99,7 +99,7 @@ func ValidateWebpush(session *gocql.Session, debug bool, chid string, uaid strin
 			found = true
 		}
 	}
-
+	
 	return
 }
 

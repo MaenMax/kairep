@@ -1,3 +1,6 @@
+22020/11/18 Maen v3.0.11
+    * Bug 108379 - return 202 for offline messages. r=Raffi  
+
 22020/07/20 sedwards v3.0.10
     * Bug 96123 - When setting max_msg=value remove all space and quotes to ensure REP sees the value as an integer. r=Raffi  
 

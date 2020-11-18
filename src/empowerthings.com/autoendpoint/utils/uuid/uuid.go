@@ -9,7 +9,7 @@ import (
 	"os"
 	"sync"
 	"time"
-
+	l4g "code.google.com/p/log4go"
 	"empowerthings.com/autoendpoint/utils"
 	"empowerthings.com/autoendpoint/utils/encoding"
 )
@@ -167,3 +167,37 @@ func NewUuid() string {
 	// 64^20 = 1.329227996x10^36  (instead of the possible 64^27)
 	return result[0:20]
 }
+func FormatId(chid string,debug bool) string {
+
+	/*
+	        This method will format extracted channelID from CassandraDB to be UUAID standard.
+
+		Example:
+
+		Input: 282c8b9184044db89f942c5972d0e55a
+
+		Output: 282c8b91-8404-4db8-9f94-2c5972d0e55a
+	*/
+	if debug {
+
+		l4g.Info("Formating channelID :%v", chid)
+
+	}
+	var formated_chid string
+	var first_part string
+	for pos, char := range chid {
+		first_part = first_part + string(char)
+		if pos == 7 || pos == 11 || pos == 15 || pos == 19 {
+
+			first_part = first_part + "-"
+			formated_chid = formated_chid + first_part
+			first_part = ""
+		}
+		if pos == 31 {
+
+			formated_chid = formated_chid + first_part
+		}
+	}
+	return formated_chid
+}
+

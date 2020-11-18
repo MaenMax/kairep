@@ -9,7 +9,7 @@ package vapid
 import(
 	
 	l4g "code.google.com/p/log4go"
-	"empowerthings.com/autoendpoint/routercore/model"
+	"empowerthings.com/autoendpoint/model"
 	"strings"
 	"errors"
 	"crypto/sha256"
@@ -22,6 +22,7 @@ import(
 	"crypto"
 	"encoding/json"
 	"time"
+	"empowerthings.com/autoendpoint/utils/uuid"
 	
 )
 
@@ -29,30 +30,17 @@ var debug bool
 var curve256 = elliptic.P256()
 
 
-func Verify_AppServer_ID(headers model.Vapid_Headers, public_key_in_headers string, processed_key []byte) (err error) {
-
-	
-	if debug {
-		
+func Verify_AppServer_ID(headers model.Vapid_Headers, public_key_in_headers string, processed_key []byte) (err error) {	
+	if debug {	
 		l4g.Info("Verifying application server's identity.")
-		
 	}
-	
-	
 	AUTH_SCHEME := [7]string{"webpush", "Webpush","Bearer","bearer","Hawk","hawk", "WebPush"}
-	
-	
 	//Getting the public key of application server form the headers of POST request.
 	authorization_header := headers.Authorization
-	
 	if len(authorization_header) == 0 {
-		
 		err = errors.New("Received VAPID request without authorization header.")
 		return err
-		
 	}
-	
-	
 	/*
  From authorization header we need to check three things: 
 
@@ -61,9 +49,7 @@ func Verify_AppServer_ID(headers model.Vapid_Headers, public_key_in_headers stri
  [3] That the JWT included in this header is a valid one. We will be using
      the public_key extracted in the step above to test/validate/decode the JWT.
 	  */	
-	
 	auth_header_seperated := strings.Fields(authorization_header)
-	
 	/*
   Length should be no more than 2, one for the auth scheme, and one for the JWT. A valid header will look like:
  "Authorization: webpush <JWT_TOKEN>"   
@@ -75,166 +61,92 @@ func Verify_AppServer_ID(headers model.Vapid_Headers, public_key_in_headers stri
  "Authorization: hawk    <JWT_TOKEN>"
 
 */
-
-	
-	if len(auth_header_seperated) != 2 {
-		
+	if len(auth_header_seperated) != 2 {		
 		err = errors.New("Invalid VAPID authorization header content.")
 		return err
 	}
-	
-	
 	var found bool
 	found = false
-	
 	//Searching in the defined set of schemes for any matches.If not,return an error.
-	
 	for i:= range AUTH_SCHEME {
-		
-		
 		if auth_header_seperated[0] == AUTH_SCHEME[i] {
-			
 			found = true
-			
 		}	
-		
 	}
-	
 	if found == false{
 		err_msg := fmt.Sprintf("Invalid VAPID authorization scheme received: %s",auth_header_seperated[0])
 		err = errors.New(err_msg)
-		return err
-		
+		return err	
 	}
-	
-	
 	//Extract the JWT part.
-	
 	token := auth_header_seperated[1]
-	
-
 	if token == "" {
-		
 		err_msg := fmt.Sprintf("VAPID request did not include JWT")
 		err = errors.New(err_msg)
-		
 		return err
 	}
-	
-	
-	if debug {
-		
+	if debug {	
 		l4g.Info("Validating VAPID JWT")
 		l4g.Info(token)
-		
 	}
-	
-	
 	err = validate_vapid_token(token,processed_key)
-	
 	if err!= nil {
-		
 		return err
-		
 	}
-
 	if debug {
-
 		l4g.Info("VAPID JWT is valid.")
 	}
-	
 	return nil
 }
-
-
 // Verifies signature of VAPID JWT.
-
-
-
-
 func validate_vapid_token (token string, public_key []byte) (err error) {
-	
 	// First step: Check token expiration.
-	
-	
 	token_arr := strings.Split(token, ".") //Splits the three parts of jwt.
-	
 	if len(token_arr) !=3 { 
-		
 		err =errors.New("Wrong JWT format")
-		
 		return err		
-		
 	}
-	
 	base64_decoded_body, err := base64.RawURLEncoding.DecodeString(token_arr[1])
 	if err != nil {
 		l4g.Error("decode error: %s", err)
 		return err
 	}
-	
 	var token_body model.VAPID_JWT_BODY
-	
 	err = json.Unmarshal(base64_decoded_body, &token_body)
-	
 	expiration := token_body.Expiration
-	
 	// Check if token is expired.
-	
 	now:= time.Now()
-	
 	if now.Unix() > int64(expiration) {
-		
 		err = errors.New("Expired VAPID JWT")
 		return err
 		
 	}
-		
 	//We need to process the public key (We can not just use it directly to verify the signature of JWT).
 	// Baically, we need to trasform it into the *ecdsa.PublicKey structure.
-	
 	x,y := elliptic.Unmarshal(curve256, public_key)
-
 	// Extract the point coordinates on the elliptic graph. Any point on the graph can be the public key. Golang's ecdsa library
 	// requires the value of x and y as to build a public key instance which can be "understood" and used futher to validate the
 	// data which was previously signed with the VAPID private key (Private key is the elliptic curve itslef). 
-	
 	//	l4g.Debug("value of X is: %s", x)
 	//	l4g.Debug("value of Y is: %s", y)
-	
 	pubkey := ecdsa.PublicKey{Curve: curve256, X: x, Y: y}
-	
 	if debug{
 		l4g.Info("Public key object has been built successfully")
 	}
-	
 	sig_material, r, s, err := extract_signature(token)
-	
 	if err != nil{
-		
 		return err
-		
 	}
-	
 	//	l4g.Debug("Signature material is: %s", sig_material)
-	
 	hasher := crypto.SHA256.New()
 	hasher.Write([]byte(sig_material))
-	
 	valid := ecdsa.Verify(&pubkey,hasher.Sum(nil), s,r)
-	
 	if valid == false {
-		
-		
 		err = errors.New("Invalid signature")
 		return err
-		
 	}
-	
 	return nil
-	
 }
-
 
 /*
 get_label() method basically fetches the lable value included in header.
@@ -248,30 +160,21 @@ get_label("P256", str1) >> BF93fPhAnJYn-QdqlFz4CbdVDSxWR
 
 */
 
-func GetLabel(key string, body string) (label string) {
-	
+func GetLabel(key string, body string) (label string) {	
 	index := strings.Index(body, key)
-	
 	label = ""
-
 	sub_body := body[index+ len(key) +1:]
-	
 	if index != -1 {
-		
 		if endidx := strings.IndexAny(sub_body,";,"); endidx != -1 {
 			label = sub_body[:endidx]
 		}else {
 			label = sub_body
 		}
 		return label
-		
-		
 	}else{
 		// Not found !	
 		return ""	
-		
  	}
-	
 } 
 
 func extract_signature(token string) (sig_material string, r,s *big.Int,err error) {
@@ -281,34 +184,19 @@ func extract_signature(token string) (sig_material string, r,s *big.Int,err erro
 	
 	r = rbig
 	s = sbig
-	
-
 	if debug {
-		
 		l4g.Info("Extracting VAPID signature." )
 		
 	}
-	
-	
-	if !strings.Contains(token,".") {
-		
+	if !strings.Contains(token,".") {	
 		err =errors.New("Wrong JWT format")
-		
 		return "",r,s,err
-		
 	}
-	
 	token_arr := strings.Split(token, ".") //Splits the three parts of jwt.
-	
 	if len(token_arr) !=3 { 
-		
 		err =errors.New("Wrong JWT format")
-		
 		return "",r,s,err		
-		
 	}
-
-
 	/*Based on VAPID specs, verification will happen as follows:
 	 
 [1] Received VAPID JWT is like any normal JWT which consists of three parts:
@@ -349,33 +237,20 @@ func extract_signature(token string) (sig_material string, r,s *big.Int,err erro
     That's it !
 
  */
-	
-	sig_material = token_arr[0] + "." + token_arr[1]  // first part and second part of JWT form the signature material together.
-	
-	
+	sig_material = token_arr[0] + "." + token_arr[1]  // first part and second part of JWT form the signature material together.	
 	//	l4g.Debug("Third part (Signature) to decode: >%v< ", token_arr[2])
 	base64_encoded_signature, err := base64.RawURLEncoding.DecodeString(token_arr[2])
-	
 	if err != nil {
-		
 		return  "",r,s,err
-		
 	}
-
 	base64_encoded_signature, err = base64.RawURLEncoding.DecodeString(token_arr[2])
-	
 	if err != nil {
-		
 		return  "",r,s,err
-		
 	}
-	
-	if len(base64_encoded_signature)!= 64 {
-		
+	if len(base64_encoded_signature)!= 64 {	
 		err =errors.New("Invalid Signature.Length is not correct.")
 		return "",r,s,err						
 	}
-	
 	// Extracting s ans r values from the base64 decoded signature.
 	
 	//	l4g.Debug("Extracting r and s values from the base64 decoded signature.")
@@ -383,167 +258,116 @@ func extract_signature(token string) (sig_material string, r,s *big.Int,err erro
 	first_part := []byte(base64_encoded_signature[:32])
 	second_part:= []byte(base64_encoded_signature[32:])
 
-
 	unfinished_s := make([]byte, hex.EncodedLen(len(first_part)))
 	hex.Encode(unfinished_s, first_part)
-
 
 	unfinished_r:= make([]byte, hex.EncodedLen(len(second_part)))
 	hex.Encode(unfinished_r, second_part)
 	
-	
 	// l4g.Debug("Unfinished s is %s: ", string(unfinished_s))
 	// l4g.Debug("Unfinished r is:%s ", string(unfinished_r))
-
 
 	rbig, ok := rbig.SetString(string(unfinished_r), 16)
         if !ok {
 		err = errors.New("Cannot Parse string value of r to big int.")
 		return "",r,s,err
 	}
-
 	sbig, ok = sbig.SetString(string(unfinished_s), 16)
         if !ok {
 		err = errors.New("Cannot Parse string value of s to big int.")
 		return "",r,s,err
 	}
-
 	r= rbig
 	s= sbig
-	
 	// l4g.Debug("finished s is %s: ", string(s))
 	// l4g.Debug("finished r is:%s ", string(r0)
-
 	err = nil
 	return  
-	
 } 
 
-
-func DecipherKey(raw_key string) (result []byte, err error) {	
-	
+func DecipherKey(raw_key string) (result []byte, err error) {		
 	if debug{
 		l4g.Info("Deciphring public key.")
 	}
 	result,err = base64.RawURLEncoding.DecodeString(raw_key)
-	
-	
 	if err !=nil {
-
 		result = nil
 		return result, err
-		
-		
 	}
-	
 	key_len := len(result)
-	if key_len ==65 &&  result[0] == '\x04'{
-		
+	if key_len ==65 &&  result[0] == '\x04'{	
 		if debug{
 			l4g.Info("CASE 1")
 		}
 		return result, nil 
-
-
 	}
 	//Key format is "raw"
 	if key_len == 64 {
-
 		result =  append( result, '\x04')
-		
 		return  result , nil
 		if debug{
 			l4g.Info("CASE 2")
 		}
 	}
-	
 	var equals bool 
 	equals = false
-	
 	if result[0] == '0' && result[1]== 'v' && result[2]== '0'{
-
-		
 		equals = true
-		
 	} 
-	
 	if key_len == 88 && equals {
 		if debug{
 			l4g.Info("CASE 3")
 		}
 		result  := result[len(result)-64:]
-		return result,nil
-		
+		return result,nil	
 	}
-	
 	err = errors.New("Unknown public key format specified")
-	
-
 	result = nil
-
 	return result,err
-
 }
 
 
-func Varify_PublicKey(headers model.Vapid_Headers, pub_key string, publlic_key_in_header string, processed_key []byte) (err error) {
-
-	
+func Varify_PublicKey(headers model.Vapid_Headers, pub_key string, publlic_key_in_header string, processed_key []byte) (err error) {	
 	if debug {
-		
 		l4g.Info("Comparing public keys..")
-		
 	}
-	
-	
 	//[A] SHA256 hash it.  (Defined in FIPS 180-4)
-	
 	sha256_pub_key := sha256.New()
 	sha256_pub_key.Write([]byte(processed_key))	
-	
-	
-	
 	//[B] "Hexlify" the result !
-	
-	
 	hex_encoded_pubkey := make([]byte, hex.EncodedLen(len(sha256_pub_key.Sum(nil))))
 	hex.Encode(hex_encoded_pubkey, sha256_pub_key.Sum(nil))
-	
-	
 	//[C] Compare between hex_encoded_pubkey  and the public key which was previously fernet-decoded
-	
 	if debug {
-		
 		l4g.Info("Comparing public keys")
-		//l4g.Debug("Public key extracted from header: %s", hex_encoded_pubkey)
-		//l4g.Debug("Public key extracted from subscription data: %s", pub_key)
-		
 	}
-	
-	
-	if strings.Compare(string(hex_encoded_pubkey), pub_key) != 0 {	
-		
+	if strings.Compare(string(hex_encoded_pubkey), pub_key) != 0 {		
 		if debug {
-			
 			l4g.Error("[ERROR] Key Mismatch !")
 			err = errors.New("Key Mismatch")
 			return err
 		}
-		
 	}
-	
 	if debug{
 		l4g.Info("Public Keys matched.")
 	}
-	
 	// Public keys matched !!
-
 	return nil
 }
 
+func  ExtractVapidSubscription(subscription string, debug bool) (uaid string, chid string, pub_key string) {
+	if debug {
+		l4g.Info("Extracting chid, uaid and application server's public key from the received VAPID subscription data.")
+	}
+	if debug {
+		l4g.Info("Decrypted Vapid endpoint information: %s ", subscription)
+	}
+	uaid = subscription[0:32]
+	unformated_chid := subscription[32:64]
+	chid = uuid.FormatId(unformated_chid,debug)
+	pub_key = subscription[64:]
+	return
+}
 func SetDebug( debug_flag bool) {
-
-
 	debug = debug_flag
-
 }
