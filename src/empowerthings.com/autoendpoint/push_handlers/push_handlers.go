@@ -81,7 +81,7 @@ func WebPushHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if strings.Compare(api_ver, "v1")!=0 {
+	if strings.Compare(api_ver, "v1")==0 {
 		if debug {
 			l4g.Debug("V1 API is called. Received header is: %v", r.Header)
 		}
