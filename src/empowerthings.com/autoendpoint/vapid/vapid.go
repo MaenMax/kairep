@@ -327,7 +327,7 @@ func DecipherKey(raw_key string) (result []byte, err error) {
 }
 
 
-func Varify_PublicKey(headers model.Vapid_Headers, pub_key string, publlic_key_in_header string, processed_key []byte) (err error) {	
+func Verify_PublicKey(headers model.Vapid_Headers, pub_key string, publlic_key_in_header string, processed_key []byte) (err error) {	
 	if debug {
 		l4g.Info("Comparing public keys..")
 	}
@@ -341,12 +341,12 @@ func Varify_PublicKey(headers model.Vapid_Headers, pub_key string, publlic_key_i
 	if debug {
 		l4g.Info("Comparing public keys")
 	}
-	if strings.Compare(string(hex_encoded_pubkey), pub_key) != 0 {		
+	if strings.Compare(string(hex_encoded_pubkey), pub_key) != 0 {
 		if debug {
 			l4g.Error("[ERROR] Key Mismatch !")
-			err = errors.New("Key Mismatch")
-			return err
 		}
+		err = errors.New("Key Mismatch")
+		return err		
 	}
 	if debug{
 		l4g.Info("Public Keys matched.")

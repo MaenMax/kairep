@@ -126,7 +126,6 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 		rw.stats.Increment("webpush.413")
 		return http.StatusRequestEntityTooLarge, getResponseBody("104") //413
 	}
-
 	// Don't verify VAPID JWT on multicast here, becasue it has already been verified before in Muliticast() method. Verifying VAPID JWT is indeed the half way through verifying App server's identity (Which has been done before). After that, process to Verify public keys of each indivisual endpoint only and only if that endpoint is VAPID. If the endpoint is v1 skip that and notify the endpoint without doing such checking.
 	if rw.vapid && !rw.multicast{
 		if rw.vapid_headers.CryptoKey == "" {
@@ -144,14 +143,12 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 		if public_key_in_headers == "" {
 			l4g.Error("Error extracting p256ecdsa label (public key) from HTTP POST header appServerIP:%s", rw.app_server_ip)
 			if rw.debug {
-				l4g.Debug("responseCode:%v  uaid:%s  cepHostname: NA", http.StatusUnauthorized, rw.uaid)
-				
+				l4g.Debug("responseCode:%v  uaid:%s  cepHostname: NA", http.StatusUnauthorized, rw.uaid)		
 			} else {
 				l4g.Debug("responseCode:%v uaid:%s ", http.StatusUnauthorized, rw.uaid)
 			}
 			rw.stats.Increment("webpush.401")
-			return http.StatusUnauthorized,getResponseBody("114") //401
-			
+			return http.StatusUnauthorized,getResponseBody("114") //401	
 		}
 		processed_key, err := vapid.DecipherKey(public_key_in_headers)
 		if err != nil {
@@ -164,7 +161,6 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 			rw.stats.Increment("webpush.401")
 			return http.StatusUnauthorized, getResponseBody("115") //401		
 		}
-		
 		err = vapid.Verify_AppServer_ID(rw.vapid_headers, public_key_in_headers, processed_key)
 		if err != nil {
 			l4g.Error("Unable to verify application server's identity. Routing request is refused. '%s' appServerIP:%s", err, rw.app_server_ip)
@@ -176,8 +172,7 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 			rw.stats.Increment("webpush.401")
 			return http.StatusUnauthorized,getResponseBody("116") //401
 		}
-		
-		err = vapid.Varify_PublicKey(rw.vapid_headers, pub_key, public_key_in_headers, processed_key)
+		err = vapid.Verify_PublicKey(rw.vapid_headers, pub_key, public_key_in_headers, processed_key)
 		if err != nil {
 			l4g.Error("Unable to verify application server's identity. Routing request is refused. '%s' appServerIP:%s", err, rw.app_server_ip)
 			if rw.debug {
@@ -187,7 +182,6 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 			}
 			rw.stats.Increment("webpush.401")
 			return http.StatusUnauthorized,getResponseBody("117") //401
-			
 		}
 	}
 	if rw.debug && version == 2 {
