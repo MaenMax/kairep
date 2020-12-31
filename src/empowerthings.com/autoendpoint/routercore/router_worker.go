@@ -105,7 +105,8 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 		rw.stats.Increment("webpush.404")
 		return http.StatusNotFound,getResponseBody("102") //404
 	}
-	if !rw.multicast{ // For multicast message we don't need to extract headers because it is an EMPTY push message.
+
+	if !rw.multicast && rw.protocol!=1 { // For multicast message we don't need to extract headers because it is an EMPTY push message.
 		err = rw.extract_headers(rw.headers, rw.vapid)
 		if err != nil {
 			l4g.Error("Error while extracting headers.'%s' responseCode:%v appServerIP:%s", err, http.StatusBadRequest, rw.app_server_ip)
@@ -115,11 +116,12 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 			rw.ttl, err = strconv.Atoi(rw.headers.Get("ttl"))
 			if err != nil {
 				if err != nil {
-					l4g.Error("Error while extracting TTL header of the multicast request.'%s' responseCode:%v appServerIP:%s", err, http.StatusBadRequest, rw.app_server_ip) 
+					l4g.Error("Error while extracting TTL header of the multicast request.'%s' responseCode:%v appServerIP:%s", err, http.StatusBadRequest, rw.app_server_ip)
+					return http.StatusBadRequest, "" //400
 				}	
 			}
 		}
-	}	
+	}			
 	l4g.Info("Message for uaid:%s from appServerIP:%s", rw.uaid, rw.app_server_ip)
 	if len(rw.body) > _conf.Max_Msg_Length {
 		l4g.Info("responseCode:%v Message of length %v is too large for uaid:%s ", http.StatusRequestEntityTooLarge, len(rw.body), rw.uaid)
@@ -251,6 +253,7 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 		}
 		rw.msg = model.FormatNotificationData(rw.body, rw.debug)
 		simple_push_notif := simplepush.CreateSimplePushNotif([]byte(rw.msg), chid,rw.debug)
+		
 		payloadBytes, err := json.Marshal(simple_push_notif)
 		if err != nil {
 			l4g.Error("[ERROR] Cannot marshal SimplePush notification body: '%s'", err)
@@ -338,7 +341,7 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 		if err != nil {
 			l4g.Error("[ERROR] Cannot marshal notification body.'%s' uaid:%s appServerIP:%s", err, rw.uaid, rw.app_server_ip)
 			l4g.Info("Offending input data was: '%v'", dataB)
-			return http.StatusInternalServerError,"" //400
+			return http.StatusInternalServerError,"" //500
 		}
 	}
 	rw.sorted_key = model.SortKey(message_id, uaid, chid,rw.topic, rw.sortkey_timestamp,rw.debug)

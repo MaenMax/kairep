@@ -26,9 +26,9 @@ type WebPushNotification struct {
 	Debug                   bool
 }
 type SimplePushNotification struct {
-	Version      string           `json:"version"`
+	Version      int64            `json:"version"`
 	Data         string           `json:"data"`
-	ChannelID    string           `json:"channel_id"`  
+	ChannelID    string           `json:"channelID"`  
 }
 
 // CreateWebPushNotif function takes a required parameter to construct a WebPushNotification object described in "model" package. WebPushNotification object will then be used as a parameter to StoreMessage()  method that will store offline messages (Incase CEP response is anything other than 200).
