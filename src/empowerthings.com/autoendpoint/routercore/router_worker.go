@@ -222,25 +222,57 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 			l4g.Debug("responseCode:%v uaid:%s", http.StatusGone, rw.uaid)
 		}	
 		rw.stats.Increment("webpush.410")
-		return http.StatusGone, getResponseBody("103") //410
+		return http.StatusGone, getResponseBody("120") //410
 		
 	}
+	month,year,err := cassandra.GetMonthAndYear(current_month)
+	if err!=nil{
+		l4g.Error("Failed to get message table's month and year='%s': '%s' appServerIP:%s", rw.uaid, err, rw.app_server_ip)
+		if cassandra.DropUser(rw.uaid, rw.session) != true {
+			if rw.debug {
+				l4g.Debug("WARNING: could not drop user:%s from router table",rw.uaid)
+			}  
+		}
+		l4g.Info("responseCode:%v uaid:%s appServerIP:%s", http.StatusGone, rw.uaid,rw.app_server_ip)		
+		return http.StatusGone, getResponseBody("121") //410
+	}
+	now:=time.Now()
+	if CheckIfOld(year,month,now){
+		l4g.Info("uaid:%s has not connected for a long time  Month table:%s  appServerIP:%s", rw.uaid,current_month,rw.app_server_ip)
+		if cassandra.DropUser(rw.uaid, rw.session) != true {
+			if rw.debug {
+				l4g.Debug("WARNING: could not drop user:%s from router table",rw.uaid)
+			}  
+		}
+		if rw.debug {
+			l4g.Debug("responseCode:%v  uaid:%s  cepHostname:%s", http.StatusGone, rw.uaid, node_id)
+		} else {
+			l4g.Debug("responseCode:%v uaid:%s", http.StatusGone, rw.uaid)
+		}	
+		rw.stats.Increment("webpush.410")
+		return http.StatusGone, getResponseBody("122") //410
+	}
+
 	// At this point, we would like to verify that the decoded chid (application ID) is already registered for that device or uaid. Because at some cases, it true that the device ID is found in router table, but does the application to which we are sending a message, actually registered for out push service? The answer can only be known by quering the message table of that device in order to get the list of registered applications (chids). If the channel ID is not found in the massage table of that device, then REP SHOULD return 401 GONE.
-	if router_type == "webpush" {
+	if strings.Compare(router_type,"webpush")==0 {
 		var found bool
 		found,err = cassandra.ValidateWebpush(rw.session, rw.debug, chid, rw.uaid, current_month, router_type)
-		if err != nil && err.Error() != "not found"{
+		if err != nil{
+			if strings.Contains(err.Error(),"unconfigured table"){
+				l4g.Error("Message table was dropped for old user: uaid=%s: '%s' appServerIP:%s", rw.uaid, err, rw.app_server_ip)		
+				l4g.Info("responseCode:%v uaid:%s appServerIP:%s", http.StatusGone, rw.uaid,rw.app_server_ip)		
+				rw.stats.Increment("webpush.410")
+				return http.StatusGone,getResponseBody("122") //410
+			}
 			l4g.Error("Failed to validate CHID=%s uaid=%s: '%s' appServerIP:%s", chid, rw.uaid, err, rw.app_server_ip)		
 			l4g.Info("responseCode:%v uaid:%s appServerIP:%s", http.StatusInternalServerError, rw.uaid,rw.app_server_ip)		
 			rw.stats.Increment("webpush.500")
-			return http.StatusInternalServerError,getResponseBody("999") //500
-			
+			return http.StatusInternalServerError,getResponseBody("998") //500
 		}
 		if found == false {
 			l4g.Error("responseCode:%v  CHID not found chid:%s appServerIP:%s", http.StatusGone, chid, rw.app_server_ip)
 			rw.stats.Increment("webpush.410")
 			return http.StatusGone,getResponseBody("119") //410
-			
 		}
 	}
 	// We don't want to make validation on message_month value, because for
@@ -298,8 +330,7 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 		default:
 			l4g.Error("Unexpected responseCode from CEP for a simplepush message: %v, uaid:%s appServerIP:%s", response_code, rw.uaid, rw.app_server_ip)
 			rw.stats.Increment("webpush.500")
-			return http.StatusInternalServerError,"" //500
-			
+			return http.StatusInternalServerError,"" //500			
 		}
 	}
 	/*Based on the Notification POST request REP node has received, it will build the request that need to be sent to CEP. In the original Mozilla implementation,
@@ -349,7 +380,7 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 	body := bytes.NewReader(payloadBytes)
 	response_code, err = rw.notify_cep_node(node_id, body, rw.uaid)
 	if err != nil {
-		l4g.Error("[ERROR] Error Routing  WebPush notification.%s uaid:%s appServerIP:%s", err, rw.uaid, rw.app_server_ip)
+		l4g.Error("Error Routing  WebPush notification.%s uaid:%s appServerIP:%s", err, rw.uaid, rw.app_server_ip)
 		if rw.debug {
 			l4g.Debug("Notification object to be saved is: %v", notification)
 			l4g.Debug("Message for uaid:%s will be saved in: %s", rw.uaid, current_month)
@@ -366,15 +397,13 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 				l4g.Error("Error while saving message into DB: '%s' uaid:%s appServerIP:%s", err, rw.uaid, rw.app_server_ip)
 				l4g.Info("responseCode:%v  uaid:%s  cepHostname:%s appServerIP:%s", http.StatusInternalServerError, rw.uaid, node_id, rw.app_server_ip)
 				rw.stats.Increment("webpush.500")
-				return http.StatusInternalServerError, getResponseBody("999") //500
-				
+				return http.StatusInternalServerError, getResponseBody("997") //500	
 			}
 			l4g.Info("Message saved successfully responseCode:%v uaid:%s ", http.StatusAccepted, rw.uaid)
 		}
 		rw.stats.Increment("webpush.202")
 		return http.StatusAccepted,"" //202
-		
-	}
+ 	}
 	if rw.debug {
 		l4g.Debug("responseCode from CEP: %v  uaid:%s", response_code, rw.uaid)
 	}
@@ -419,7 +448,7 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 				l4g.Error("Error while saving message into DB: '%s' uaid:%s appServerIP:%s", err, rw.uaid, rw.app_server_ip)
 				l4g.Info("responseCode:%v uaid:%s appServerIP:%s", http.StatusInternalServerError, rw.uaid,rw.app_server_ip)
 				rw.stats.Increment("webpush.500")
-				return http.StatusInternalServerError, getResponseBody("999")//500
+				return http.StatusInternalServerError, getResponseBody("996")//500
 			}
 			l4g.Info("Message saved successfully responseCode:%v uaid:%s ", http.StatusAccepted, rw.uaid)
 		}
@@ -521,4 +550,14 @@ func (rw *T_RouterWorker) is_exceeded(node_id string) bool {
 }
 func getResponseBody(text string)(string) {	
 	return fmt.Sprintf("{\"errno\":\"%s\"}",text)
+}
+func CheckIfOld(year int, month int, now time.Time) (old bool){
+	curr_year, curr_month, _ := now.UTC().Date()
+        end := time.Date(curr_year, curr_month, 1, 0, 0, 0, 0, time.UTC) // The first day of current month
+	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)// The first day of the message table creation month
+	difference_in_days := int(end.Sub(start).Hours())/24
+	if difference_in_days > 90{
+		old = true
+	}
+	return
 }

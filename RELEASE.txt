@@ -1,3 +1,6 @@
+2021/01/15 Maen v3.0.15
+    * Bug 115073 - enhancing the management of old devices. r=Raffi  
+
 2020/12/30 Maen v3.0.14
     * Bug 113921 - fixing simplepush protocol. r=Raffi  
 
