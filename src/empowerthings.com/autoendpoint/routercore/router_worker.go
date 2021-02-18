@@ -225,34 +225,35 @@ func (rw *T_RouterWorker) RouteNotification() (response_code int, response_body 
 		return http.StatusGone, getResponseBody("120") //410
 		
 	}
-	month,year,err := cassandra.GetMonthAndYear(current_month)
-	if err!=nil{
-		l4g.Error("Failed to get message table's month and year='%s': '%s' appServerIP:%s", rw.uaid, err, rw.app_server_ip)
-		if cassandra.DropUser(rw.uaid, rw.session) != true {
-			if rw.debug {
-				l4g.Debug("WARNING: could not drop user:%s from router table",rw.uaid)
-			}  
+	if version!=1{ // Maen: Bug 117024. No need to get message table month, and year for SimplePush becasue SimplePush devices don't have message tables.
+		month,year,err := cassandra.GetMonthAndYear(current_month)
+		if err!=nil{
+			l4g.Error("Failed to get message table's month and year='%s': '%s' appServerIP:%s", rw.uaid, err, rw.app_server_ip)
+			if cassandra.DropUser(rw.uaid, rw.session) != true {
+				if rw.debug {
+					l4g.Debug("WARNING: could not drop user:%s from router table",rw.uaid)
+				}  
+			}
+			l4g.Info("responseCode:%v uaid:%s appServerIP:%s", http.StatusGone, rw.uaid,rw.app_server_ip)		
+			return http.StatusGone, getResponseBody("121") //410
 		}
-		l4g.Info("responseCode:%v uaid:%s appServerIP:%s", http.StatusGone, rw.uaid,rw.app_server_ip)		
-		return http.StatusGone, getResponseBody("121") //410
-	}
-	now:=time.Now()
-	if CheckIfOld(year,month,now){
-		l4g.Info("uaid:%s has not connected for a long time  Month table:%s  appServerIP:%s", rw.uaid,current_month,rw.app_server_ip)
-		if cassandra.DropUser(rw.uaid, rw.session) != true {
+		now:=time.Now()
+		if CheckIfOld(year,month,now){
+			l4g.Info("uaid:%s has not connected for a long time  Month table:%s  appServerIP:%s", rw.uaid,current_month,rw.app_server_ip)
+			if cassandra.DropUser(rw.uaid, rw.session) != true {
+				if rw.debug {
+					l4g.Debug("WARNING: could not drop user:%s from router table",rw.uaid)
+				}  
+			}
 			if rw.debug {
-				l4g.Debug("WARNING: could not drop user:%s from router table",rw.uaid)
-			}  
+				l4g.Debug("responseCode:%v  uaid:%s  cepHostname:%s", http.StatusGone, rw.uaid, node_id)
+			} else {
+				l4g.Debug("responseCode:%v uaid:%s", http.StatusGone, rw.uaid)
+			}	
+			rw.stats.Increment("webpush.410")
+			return http.StatusGone, getResponseBody("122") //410
 		}
-		if rw.debug {
-			l4g.Debug("responseCode:%v  uaid:%s  cepHostname:%s", http.StatusGone, rw.uaid, node_id)
-		} else {
-			l4g.Debug("responseCode:%v uaid:%s", http.StatusGone, rw.uaid)
-		}	
-		rw.stats.Increment("webpush.410")
-		return http.StatusGone, getResponseBody("122") //410
 	}
-
 	// At this point, we would like to verify that the decoded chid (application ID) is already registered for that device or uaid. Because at some cases, it true that the device ID is found in router table, but does the application to which we are sending a message, actually registered for out push service? The answer can only be known by quering the message table of that device in order to get the list of registered applications (chids). If the channel ID is not found in the massage table of that device, then REP SHOULD return 401 GONE.
 	if strings.Compare(router_type,"webpush")==0 {
 		var found bool
